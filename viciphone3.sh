@@ -1,21 +1,50 @@
 #!/bin/bash
 
-# Navigate to /var/tmp
-cd /var/tmp || exit 1
+set -e  # Exit immediately if a command exits with a non-zero status
+set -o pipefail
 
-# Clone the repository
-git clone https://github.com/ccabrerar/ViciPhone.git
+REPO_URL="https://github.com/vicimikec/ViciPhone.git"
+BRANCH="v3.0"
+WORKDIR="/var/tmp"
+CLONE_DIR="$WORKDIR/ViciPhone"
+TARGET1="/srv/www/htdocs/agc/viciphone"
+TARGET2="/srv/www/htdocs/vicidial/viciphone"
 
-# Check if clone was successful
-if [ ! -d "ViciPhone" ]; then
-  echo "Clone failed, exiting."
-  exit 1
+echo "Starting ViciPhone v3.0 installation..."
+echo "Working in: $WORKDIR"
+
+# Cleanup any old clone
+if [ -d "$CLONE_DIR" ]; then
+    echo "Removing old ViciPhone directory..."
+    rm -rf "$CLONE_DIR"
 fi
 
-# Copy the ViciPhone directory to the target location
-cp -r ViciPhone /srv/www/htdocs/agc/viciphone
+cd "$WORKDIR" || { echo "Failed to change to $WORKDIR"; exit 1; }
+
+echo "Cloning branch '$BRANCH' from $REPO_URL..."
+git clone --branch "$BRANCH" "$REPO_URL" ViciPhone
+
+if [ ! -d "$CLONE_DIR" ]; then
+    echo "❌ Clone failed. Exiting."
+    exit 1
+fi
+echo "✅ Repository cloned successfully."
+
+# Copy to target 1
+echo "Copying to $TARGET1..."
+rm -rf "$TARGET1"
+cp -r "$CLONE_DIR" "$TARGET1"
+
+# Copy to target 2
+echo "Copying to $TARGET2..."
+rm -rf "$TARGET2"
+cp -r "$CLONE_DIR" "$TARGET2"
 
 # Set permissions
-chmod -R 755 /srv/www/htdocs/agc/viciphone
+echo "Setting permissions to 755 on both targets..."
+chmod -R 755 "$TARGET1"
+chmod -R 755 "$TARGET2"
 
-echo "ViciPhone successfully cloned, copied, and permissions set."
+echo "✅ ViciPhone v3.0 successfully deployed to:"
+echo "   - $TARGET1"
+echo "   - $TARGET2"
